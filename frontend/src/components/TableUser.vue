@@ -28,6 +28,11 @@
             <th
               class="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider"
             >
+              Role
+            </th>
+            <th
+              class="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider"
+            >
               Status
             </th>
             <th
@@ -44,23 +49,31 @@
             class="hover:bg-gray-50 border-t border-gray-200"
           >
             <td class="px-6 py-4 text-sm font-medium text-gray-700">
-              {{ user.username }}
+              {{ user.employee.name }}
             </td>
             <td class="px-6 py-4 text-sm text-gray-600">{{ user.email }}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">{{ user.status }}</td>
+            <td class="px-6 py-4 text-sm text-gray-600">
+              {{ user.role.name }}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600">
+              {{ user.is_active === 1 ? "Active" : "Nonactive" }}
+            </td>
+
             <td class="px-6 py-4">
-              <button
-                @click="openEditUserModal(user)"
-                class="text-yellow-600 hover:text-yellow-500 hover:bg-yellow-100 px-4 py-2 rounded-md transition-all"
-              >
-                Edit
-              </button>
-              <button
-                @click="deleteUser(user.id)"
-                class="ml-2 text-red-600 hover:text-red-500 hover:bg-red-100 px-4 py-2 rounded-md transition-all"
-              >
-                Delete
-              </button>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <button
+                  @click="openEditUserModal(user)"
+                  class="text-yellow-600 hover:text-yellow-500 hover:bg-yellow-100 px-4 py-2 rounded-md transition-all w-full sm:w-auto"
+                >
+                  Edit
+                </button>
+                <button
+                  @click="deleteUser(user.id)"
+                  class="text-red-600 hover:text-red-500 hover:bg-red-100 px-4 py-2 rounded-md transition-all w-full sm:w-auto"
+                >
+                  Delete
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -118,23 +131,28 @@
       <div class="bg-white p-6 rounded-lg shadow-lg w-96">
         <h3 class="text-xl font-semibold mb-4 text-gray-900">Edit User</h3>
         <input
-          v-model="editUser.username"
-          type="text"
-          placeholder="Username"
-          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-600 mb-4"
-        />
-        <input
           v-model="editUser.email"
           type="email"
           placeholder="Email"
           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-600 mb-4"
         />
+
+        <select
+          v-model="editUser.role_id"
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-600 mb-4"
+        >
+          <option disabled value="">Select Role</option>
+          <option v-for="role in roles" :key="role.id" :value="role.id">
+            {{ role.name }}
+          </option>
+        </select>
+
         <select
           v-model="editUser.status"
           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-600 mb-4"
         >
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
+          <option :value="true">Active</option>
+          <option :value="false">Inactive</option>
         </select>
         <div class="flex justify-end space-x-4">
           <button
@@ -157,28 +175,42 @@
 
 <script setup>
 import { ref } from "vue";
-
-const users = ref([
-  { id: 1, username: "john_doe", email: "john@example.com", status: "Active" },
-  {
-    id: 2,
-    username: "jane_doe",
-    email: "jane@example.com",
-    status: "Inactive",
-  },
-]);
+import { getAllUsers } from "../services/users/users.js";
+import { onMounted } from "vue";
+import { UsersIcon } from "@heroicons/vue/24/outline";
+const token = localStorage.getItem("token");
+const users = ref([]);
 
 const isAddUserModalOpen = ref(false);
 const isEditUserModalOpen = ref(false);
 const newUser = ref({ username: "", email: "", status: "Active" });
 const editUser = ref({ username: "", email: "", status: "Active" });
 const userToEdit = ref(null);
-
+import { getAllRoles } from "../services/role/role.js";
+const roles = ref([]);
+const fetchUsers = async () => {
+  try {
+    const usersData = await getAllUsers(token);
+    users.value = usersData;
+    console.log(users.value);
+  } catch (error) {
+    console.error("Failed to fetch roles:", error);
+  }
+  return { users };
+};
+onMounted(fetchUsers);
 // Open Add User Modal
 const openAddUserModal = () => {
   isAddUserModalOpen.value = true;
 };
-
+const fetchRoles = async () => {
+  try {
+    const rolesData = await getAllRoles(token);
+    roles.value = rolesData;
+  } catch (error) {
+    console.error("Failed to fetch roles:", error);
+  }
+};
 // Close Add User Modal
 const closeAddUserModal = () => {
   isAddUserModalOpen.value = false;
@@ -196,6 +228,7 @@ const addUser = () => {
 
 // Open Edit User Modal
 const openEditUserModal = (user) => {
+  fetchRoles();
   userToEdit.value = user;
   editUser.value = { ...user };
   isEditUserModalOpen.value = true;

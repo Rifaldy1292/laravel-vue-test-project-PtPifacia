@@ -1,12 +1,4 @@
 <template>
-  <!--
-    This example requires updating your template:
-
-    ```
-    <html class="h-full bg-white">
-    <body class="h-full">
-    ```
-  -->
   <div
     class="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8"
   >
@@ -24,13 +16,14 @@
     </div>
 
     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-      <form class="space-y-6" action="#" method="POST">
+      <form class="space-y-6" @submit.prevent="handleLogin">
         <div>
           <label for="email" class="block text-sm/6 font-medium text-gray-900"
             >Email address</label
           >
           <div class="mt-2">
             <input
+              v-model="email"
               type="email"
               name="email"
               id="email"
@@ -51,6 +44,7 @@
           </div>
           <div class="mt-2">
             <input
+              v-model="password"
               type="password"
               name="password"
               id="password"
@@ -78,10 +72,38 @@
             href="#"
             class="font-semibold text-indigo-600 hover:text-indigo-500"
             >Daftar disini</a
-          ></router-link
-        >
+          >
+        </router-link>
       </p>
     </div>
   </div>
 </template>
-<script scoped></script>
+
+<script scoped>
+import axios from "axios";
+import { login } from "../../services/auth/post";
+export default {
+  data() {
+    return {
+      email: "",
+      password: "",
+    };
+  },
+  methods: {
+    async handleLogin() {
+      try {
+        const response = await login(this.email, this.password);
+        console.log(response);
+        localStorage.removeItem("token");
+        localStorage.setItem("token", response.token);
+        const token = localStorage.getItem("token");
+        console.log(token);
+        this.$router.push({ name: "dashboard" });
+      } catch (error) {
+        console.error("Login failed:", error.response.data.message);
+        alert("Login failed: " + error.response.data.message);
+      }
+    },
+  },
+};
+</script>
